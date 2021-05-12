@@ -1,5 +1,5 @@
 #Continue on error
-#$ErrorActionPreference = 'silentlycontinue'
+$ErrorActionPreference = 'silentlycontinue'
 
 #Require elivation for script run
 #Requires -RunAsAdministrator
