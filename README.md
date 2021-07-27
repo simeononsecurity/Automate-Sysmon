@@ -12,6 +12,7 @@ Increase your logging abilities to further your ability to detect threats and ma
 
 ## A list of scripts and tools this collection utilizes:
 
+- [Chocolatey](https://chocolatey.org/) - *Only if you don't already have Sysmon in your local path*
 - [SwiftOnSecurity/sysmon-config](https://github.com/SwiftOnSecurity/sysmon-config)
 - [Microsoft Sysinternals - Sysmon](https://docs.microsoft.com/en-us/sysinternals/downloads/sysmon)
 
