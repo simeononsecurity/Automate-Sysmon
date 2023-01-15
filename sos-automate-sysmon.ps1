@@ -4,6 +4,8 @@ $ErrorActionPreference = 'silentlycontinue'
 #Require elivation for script run
 #Requires -RunAsAdministrator
 
+if ((Get-Location).Path -NE $PSScriptRoot) { Set-Location $PSScriptRoot }
+
 $command = "Sysmon.exe"
 if ((((Get-Command $command).Source) | Test-Path) -ne $true) {
     Write-Host "$command does not exist, installing.."
