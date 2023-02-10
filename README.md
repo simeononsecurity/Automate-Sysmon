@@ -1,5 +1,7 @@
 # Automate-Sysmon
 
+[![VirusTotal Scan](https://github.com/simeononsecurity/Automate-Sysmon/actions/workflows/virustotal.yml/badge.svg)](https://github.com/simeononsecurity/Automate-Sysmon/actions/workflows/virustotal.yml)
+
 ## Introduction:
 
 Increase your logging abilities to further your ability to detect threats and malicious activity on your systems.
