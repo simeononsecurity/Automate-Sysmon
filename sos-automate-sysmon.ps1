@@ -1,17 +1,21 @@
-#Continue on error
-$ErrorActionPreference = 'silentlycontinue'
+# Continue on error
+$ErrorActionPreference = 'Continue'
 
-#Require elivation for script run
+# Require elevation for script run
 #Requires -RunAsAdministrator
 
-if ((Get-Location).Path -NE $PSScriptRoot) { Set-Location $PSScriptRoot }
+# Set the script location to the script root
+$scriptRoot = Split-Path -Parent -Path $MyInvocation.MyCommand.Definition
+Set-Location -Path $scriptRoot
 
-$command = "Sysmon.exe"
-if ((((Get-Command $command).Source) | Test-Path) -ne $true) {
-    Write-Host "$command does not exist, installing.."
+# Check if Sysmon.exe exists, install it if not
+$sysmonPath = Get-Command -Name "Sysmon.exe" -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source
+if (-not $sysmonPath) {
+    Write-Host "Sysmon.exe does not exist, installing.."
+
+    # Install Chocolatey and upgrade all packages
     Start-Job -Name "Install and Configure Chocolatey" -ScriptBlock {
         Write-Host "Installing Chocolatey"
-        # Setting up directories for values
         Set-ExecutionPolicy Bypass -Scope Process -Force
         [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
         Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
@@ -23,39 +27,50 @@ if ((((Get-Command $command).Source) | Test-Path) -ne $true) {
         choco config set --name="'proxyBypassOnLocal'" --value="'true'"
         choco upgrade all
     }
-    
+
     Write-Host "Sleeping for 60 Seconds While Chocolatey is Installed"
-    Sleep 60
-    refreshenv
+    Start-Sleep -Seconds 60
+    RefreshEnv
+
     # Install Sysmon
-    choco install sysmon
+    choco install sysmon -y
+
     # Refresh Environment to Call Sysmon.exe Natively
-    refreshenv
+    RefreshEnv
 }
-Else {
-    Write-Host "$command exists, continuing"
+else {
+    Write-Host "Sysmon.exe exists, continuing"
 }
 
 # Download SwiftOnSecurity Sysmon Configuration
-# Test if web access to the repo is available, if so download latest version of config
-# First we create the request.
-$HTTP_Request = [System.Net.WebRequest]::Create('https://raw.githubusercontent.com/SwiftOnSecurity/sysmon-config/master/sysmonconfig-export.xml')
-# We then get a response from the site.
-$HTTP_Response = $HTTP_Request.GetResponse()
-# We then get the HTTP code as an integer.
-$HTTP_Status = [int]$HTTP_Response.StatusCode
-If ($HTTP_Status -eq 200) {
-    Write-Host "Repo Access is Available. Downloading Latest Sysmon Config"
-    Invoke-WebRequest -Uri "https://raw.githubusercontent.com/SwiftOnSecurity/sysmon-config/master/sysmonconfig-export.xml" -OutFile ./Files/sysmonconfig-export.xml
-    sysmon.exe -u
-    sysmon.exe -accepteula -i ./Files/sysmonconfig-export.xml
-}
-Else {
-    Write-Host "Repo Access is Not Available. Defaulting to the local copy."
-    sysmon.exe -u
-    sysmon.exe -accepteula -i ./Files/sysmonconfig-export.xml
-}
-# Finally, we clean up the http request by closing it.
-If ($HTTP_Response -eq $null) { } 
-Else { $HTTP_Response.Close() }
+$sysmonConfigUrl = 'https://raw.githubusercontent.com/SwiftOnSecurity/sysmon-config/master/sysmonconfig-export.xml'
+$sysmonConfigLocalPath = Join-Path -Path $scriptRoot -ChildPath 'Files/sysmonconfig-export.xml'
 
+try {
+    Write-Host "Checking repo accessibility..."
+    $webRequest = [System.Net.WebRequest]::Create($sysmonConfigUrl)
+    $webResponse = $webRequest.GetResponse()
+    $statusCode = $webResponse.StatusCode
+
+    if ($statusCode -eq 'OK') {
+        Write-Host "Repo access is available. Downloading latest Sysmon config..."
+        Invoke-WebRequest -Uri $sysmonConfigUrl -OutFile $sysmonConfigLocalPath
+        & $sysmonPath -u
+        & $sysmonPath -accepteula -i $sysmonConfigLocalPath
+    }
+    else {
+        Write-Host "Repo access is not available. Defaulting to the local copy."
+        & $sysmonPath -u
+        & $sysmonPath -accepteula -i $sysmonConfigLocalPath
+    }
+}
+catch {
+    Write-Host "Error accessing the repo. Defaulting to the local copy."
+    & $sysmonPath -u
+    & $sysmonPath -accepteula -i $sysmonConfigLocalPath
+}
+finally {
+    if ($webResponse) {
+        $webResponse.Close()
+    }
+}
