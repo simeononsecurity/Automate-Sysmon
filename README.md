@@ -34,3 +34,6 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Force
 Get-ChildItem -Recurse *.ps1 | Unblock-File
 .\sos-automate-sysmon.ps1
 ```
+
+
+## [Learn more about Automating Sysmon Deployments](https://simeononsecurity.ch/github/Automate-Sysmon)
